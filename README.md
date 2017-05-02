@@ -1,14 +1,16 @@
-Lab Guide- Creating your own S2I Builder
+### Lab Guide- Creating your own S2I Builder
 
 
-Creating your own S2I Builder
+#### Creating your own S2I Builder
 
 In this lab you will learn to create S2I (Source to Image) builder images using RHEL base image. This is a simple example that creates a Lighttpd S2I image to run on OpenShift. You can follow a similar approach for other technologies.
 The code used created in this lab is available on github here
 https://github.com/RedHatWorkshops/lighttpd-rhel
 This document can also be accessed from the browser by using this bit.ly link
 http://bit.ly/s2i-lab 
-Assumptions
+
+
+#### Assumptions
 
 You know OpenShift and you should have used OpenShift S2I to deploy your applications. You are here to learn how to create S2I builders.
 You should know to use git apis, basic Linux skills, and using vi editor.
@@ -23,10 +25,13 @@ Using S2I Tools to create S2I Builder
 
 This section takes you step-by-step to create the lighttpd S2I builder image.
  
-Step 1: Verify the S2I tool and Local OpenShift
+##### Step 1: Verify the S2I tool and Local OpenShift
 
 Note: You are running the rest of the steps from the VM that was opened by clicking on the  “View s2i” icon on your desktop. This documentation can be opened in that VM by opening http://bit.ly/s2i-lab  in the browser.
 Verify that the s2i tool works on the box by running
+
+```sh
+
 $ s2i
 Source-to-image (S2I) is a tool for building repeatable docker images.
 
@@ -54,6 +59,8 @@ Flags:
  -U, --url="unix:///var/run/docker.sock": Set the url of the docker socket to use
 
 Use "s2i [command] --help" for more information about a command.
+```
+
 The machine provided to you is running a local OpenShift cluster. To verify OpenShift is running, open Firefox browser by clicking on on the top menu Applications->Firefox Web Browser
 
 The browser has been configured to log into OpenShift running locally by default. If not try accessing https://ocp.127.0.0.1.nip.io:8443/console from the browser.
@@ -69,10 +76,11 @@ Once logged in you will find a project named myproject already created for you. 
 Step 2 Create the S2I Builder Working Structure
 
 S2I tools provide the following syntax to create a default working structure for you. You can edit the files to create the S2I builder image from this structure.
-s2i create <future-builder-image-name> <builder-image-src-folder>
+```s2i create <future-builder-image-name> <builder-image-src-folder>```
 Run the following command to create a directory named s2i-lighttpd where the artifacts for the S2I builder will be added. The target S2I builder image name will be lighttpd-rhel
-$ s2i create lighttpd-rhel s2i-lighttpd
-Run ls s2i-lighttpd and observe the following folder structure
+```$ s2i create lighttpd-rhel s2i-lighttpd```
+Run `ls s2i-lighttpd` and observe the following folder structure
+```sh
 Dockerfile – This is a standard Dockerfile where we’ll define the builder image
 Makefile – a helper script for building and testing the builder image
 test/
@@ -83,14 +91,16 @@ assemble – script responsible for building the application
 run – script responsible for running the application
 save-artifacts – script responsible for incremental builds
 usage – script responsible for printing the usage of the builder image
+```
 
-Step 3 Update Assemble and Run Scripts
+#### Step 3 Update Assemble and Run Scripts
 
 Lighttpd is a httpd server. The only thing we need to do during assembly is to copy the source files into a directory from which lighttpd will serve.
 By default , the S2I builder will copy the source code into /tmp/src. If you want, this location can be changed by setting the io.openshift.s2i.destination label or passing --destination flag, in which case the sources will be placed in the src subdirectory of the directory you specified.
 In the assemble code below we will copy the source from this /tmp/src to the working directory ,which is /opt/app-root/src. You will see that when we create the container image.
 But s2i is meant to do more than that. As an example, if you were using a language such as java, you can compile your code here to produce a binary. Just to give a taste of some additional magic, let us make our lighttpd image a little smart. We will add some functionality to unzip a compressed file if your htmls are provided as a zip file.
 Edit s2i/bin/assemble script to be as below:
+```sh
 #!/bin/bash -e
 #
 # S2I assemble script for the 'lighttpd-rhel' image.
@@ -121,9 +131,12 @@ do
         unzip ${file}
   fi
 done
+```
 
 So the code above will copy the sources to the home directory, and if there are any zip files in the source code it will also unzip the same into home.
 Now, change the s2i/bin/run script to start Lighttpd server as shown below:
+
+```sh
 #!/bin/bash -e
 #
 # S2I run script for the 'lighttpd-rhel' image.
@@ -162,6 +175,8 @@ mimetype.assign = (
  ".png" => "image/png"
 )
 Note:
+```
+
 In this config file, we have set the server.document-root to /opt/app-root/src the same place where we copied the sources in the assemble script
 While we are placing this configuration file in the etc directory, this file is copied to an appropriate location in the container image specs ( you will see that in the next step)
 Step 5 Edit the Container Image Specification
